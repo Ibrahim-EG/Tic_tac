@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Gomoku Pro - Responsive Mobile Edition</title>
+<style>
+  :root {
+    /* Responsive cell sizing adapting to width & height */
+    --cell-size: clamp(16px, min(5.8vw, 3.1vh), 34px);
+    --cell-font: clamp(11px, min(3.8vw, 2.0vh), 20px);
+    
+    /* CLASSIC WOOD THEME */
+    --bg-gradient: radial-gradient(circle at center, #2e1c0c, #130a04);
+    --panel-bg: rgba(45, 27, 14, 0.85);
+    --panel-border: #8c531b;
+    --board-bg: #8c531b;
+    --board-border: #d4a359;
+    --cell-bg: linear-gradient(145deg, #e5b376, #c68e4a);
+    --cell-shadow: 2px 2px 4px rgba(0,0,0,0.4), inset 1px 1px 2px rgba(255,255,255,0.3);
+    --cell-hover: linear-gradient(145deg, #f0c288, #d89e57);
+    --text-color: #fef3c7;
+    --label-color: #fcd34d;
+    --accent-color: #f59e0b;
+    --x-color: linear-gradient(145deg, #1e293b, #0f172a);
+    --o-color: linear-gradient(145deg, #ffffff, #e2e8f0);
+    --x-text-color: #38bdf8;
+    --o-text-color: #ef4444;
+    --x-glow: 0 3px 8px rgba(0, 0, 0, 0.6);
+    --o-glow: 0 3px 8px rgba(255, 255, 255, 0.5);
+    --select-bg: #3c220e;
+    --select-border: #8c531b;
+  }
+
+  body.dark-mode {
+    --bg-gradient: radial-gradient(circle at center, #0f172a, #020617);
+    --panel-bg: rgba(15, 23, 42, 0.95);
+    --panel-border: rgba(255, 255, 255, 0.1);
+    --board-bg: #090d16;
+    --board-border: #6366f1;
+    --cell-bg: linear-gradient(145deg, #1e293b, #0f172a);
+    --cell-shadow: inset 1px 1px 2px rgba(255,255,255,0.08), inset -2px -2px 4px rgba(0,0,0,0.8);
+    --cell-hover: linear-gradient(145deg, #334155, #1e293b);
+    --text-color: #f8fafc;
+    --label-color: #94a3b8;
+    --accent-color: #818cf8;
+    --x-color: linear-gradient(145deg, #38bdf8, #0284c7);
+    --o-color: linear-gradient(145deg, #f87171, #ef4444);
+    --x-text-color: #ffffff;
+    --o-text-color: #ffffff;
+    --x-glow: 0 0 10px rgba(56, 189, 248, 0.6);
+    --o-glow: 0 0 10px rgba(248, 113, 113, 0.6);
+    --select-bg: #1e293b;
+    --select-border: #475569;
+  }
+
+  * { box-sizing: border-box; touch-action: manipulation; }
+  body {
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg-gradient); color: var(--text-color);
+    margin: 0; padding: 6px 0 20px 0; min-height: 100vh;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  h1 {
+    margin: 4px 0; color: var(--accent-color);
+    letter-spacing: 2px; font-weight: 800; font-size: clamp(18px, 4.5vw, 26px);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+
+  .controls-bar {
+    display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+    align-items: center; margin: 4px 0; background: var(--panel-bg);
+    padding: 6px 12px; border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4); backdrop-filter: blur(8px);
+    border: 1px solid var(--panel-border); max-width: 98vw;
+  }
+
+  .control-group { display: flex; align-items: center; gap: 4px; }
+  label { font-size: clamp(10px, 2.8vw, 13px); font-weight: 600; color: var(--label-color); }
+
+  select, button {
+    padding: 5px 9px; font-size: clamp(11px, 2.8vw, 13px); cursor: pointer; color: var(--text-color);
+    background: linear-gradient(145deg, #d97706, #b45309); border: none; border-radius: 6px;
+    font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.3); outline: none;
+  }
+  button { color: #ffffff; }
+  select { background: var(--select-bg); border: 1px solid var(--select-border); color: var(--text-color); }
+
+  .scoreboard {
+    display: flex; gap: 20px; font-size: clamp(13px, 3.5vw, 16px); font-weight: 700;
+    background: var(--panel-bg); padding: 4px 18px; border-radius: 16px;
+    margin: 4px 0; border: 1px solid var(--panel-border);
+  }
+  .score-p1 { color: #f59e0b; }
+  .score-p2 { color: #ef4444; }
+
+  .message { margin: 2px 0; font-size: clamp(14px, 3.8vw, 18px); color: var(--accent-color); font-weight: 700; height: 24px; }
+
+  .grid-container {
+    position: relative; display: inline-block; padding: 5px;
+    background: var(--board-bg); border-radius: 8px;
+    border: 3px solid var(--board-border);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+  }
+
+  .grid {
+    display: grid; grid-template-columns: repeat(15, var(--cell-size)); grid-template-rows: repeat(20, var(--cell-size));
+    gap: 2px; background: rgba(0, 0, 0, 0.25); border-radius: 4px; padding: 2px;
+  }
+
+  .cell {
+    width: var(--cell-size); height: var(--cell-size);
+    display: flex; align-items: center; justify-content: center;
+    font-size: var(--cell-font); font-weight: 900; cursor: pointer;
+    background: var(--cell-bg); box-shadow: var(--cell-shadow);
+    border-radius: 4px; user-select: none;
+  }
+  .cell.x { background: var(--x-color); color: var(--x-text-color); box-shadow: var(--x-glow); }
+  .cell.o { background: var(--o-color); color: var(--o-text-color); box-shadow: var(--o-glow); }
+</style>
+</head>
+<body>
+
+<h1>GOMOKU PRO</h1>
+
+<div class="controls-bar">
+  <div class="control-group">
+    <label for="gameMode">Mode:</label>
+    <select id="gameMode" onchange="handleModeChange()">
+      <option value="ai" selected>vs AI</option>
+      <option value="pvp">Pass & Play</option>
+    </select>
+  </div>
+
+  <div class="control-group ai-only">
+    <label for="difficulty">Level:</label>
+    <select id="difficulty" onchange="resetGame()">
+      <option value="novice">Novice</option>
+      <option value="easy">Easy</option>
+      <option value="medium">Medium</option>
+      <option value="hard" selected>Hard</option>
+      <option value="master">Master</option>
+    </select>
+  </div>
+
+  <div class="control-group ai-only">
+    <label for="personality">Style:</label>
+    <select id="personality" onchange="resetGame()">
+      <option value="balanced" selected>Balanced</option>
+      <option value="aggressive">Aggressive</option>
+      <option value="defensive">Defensive</option>
+      <option value="chaotic">Chaotic</option>
+    </select>
+  </div>
+
+  <div class="control-group ai-only">
+    <label for="firstTurn">First:</label>
+    <select id="firstTurn" onchange="resetGame()">
+      <option value="human">You (X)</option>
+      <option value="ai">AI (O)</option>
+    </select>
+  </div>
+
+  <button onclick="undoMove()">Undo</button>
+  <button onclick="toggleDarkMode()">Theme</button>
+</div>
+
+<div class="scoreboard">
+  <div class="score-p1"><span id="p1-label">You</span>: <span id="p1-score">0</span></div>
+  <div class="score-p2"><span id="p2-label">AI</span>: <span id="p2-score">0</span></div>
+</div>
+
+<div class="message" id="message">Preparing...</div>
+
+<div class="grid-container">
+  <div class="grid" id="grid"></div>
+  <svg id="win-svg" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10;"></svg>
+</div>
+
+<button style="margin-top: 8px; background: linear-gradient(145deg, #10b981, #059669);" onclick="resetGame()">Reset Game</button>
+
+<script>
+  const GRID_WIDTH = 15;
+  const GRID_HEIGHT = 20;
+  const DIRECTIONS = [[0, 1], [1, 0], [1, 1], [1, -1]];
+
+  // JS AI ENGINE
+  function evaluateLine(count, openEnds) {
+    if (count >= 5) return 100000;
+    if (count === 4) return openEnds === 2 ? 10000 : 2000;
+    if (count === 3) return openEnds === 2 ? 1000 : 150;
+    if (count === 2) return openEnds === 2 ? 100 : 10;
+    return 0;
+  }
+
+  function scorePosition(board, r, c, player) {
+    let totalScore = 0;
+    for (let [dr, dc] of DIRECTIONS) {
+      let count = 1, openEnds = 0;
+
+      let nr = r + dr, nc = c + dc;
+      while (nr >= 0 && nr < GRID_HEIGHT && nc >= 0 && nc < GRID_WIDTH && board[nr][nc] === player) {
+        count++; nr += dr; nc += dc;
+      }
+      if (nr >= 0 && nr < GRID_HEIGHT && nc >= 0 && nc < GRID_WIDTH && board[nr][nc] === null) openEnds++;
+
+      nr = r - dr; nc = c - dc;
+      while (nr >= 0 && nr < GRID_HEIGHT && nc >= 0 && nc < GRID_WIDTH && board[nr][nc] === player) {
+        count++; nr -= dr; nc -= dc;
+      }
+      if (nr >= 0 && nr < GRID_HEIGHT && nc >= 0 && nc < GRID_WIDTH && board[nr][nc] === null) openEnds++;
+
+      totalScore += evaluateLine(count, openEnds);
+    }
+    return totalScore;
+  }
+
+  function getCandidates(board) {
+    const candidates = new Set();
+    let hasMoves = false;
+    for (let r = 0; r < GRID_HEIGHT; r++) {
+      for (let c = 0; c < GRID_WIDTH; c++) {
+        if (board[r][c] !== null) {
+          hasMoves = true;
+          for (let dr = -2; dr <= 2; dr++) {
+            for (let dc = -2; dc <= 2; dc++) {
+              let nr = r + dr, nc = c + dc;
+              if (nr >= 0 && nr < GRID_HEIGHT && nc >= 0 && nc < GRID_WIDTH && board[nr][nc] === null) {
+                candidates.add(`${nr},${nc}`);
+              }
+            }
+          }
+        }
+      }
+    }
+    if (!hasMoves) return { list: [[Math.floor(GRID_HEIGHT/2), Math.floor(GRID_WIDTH/2)]], hasMoves: false };
+    const list = Array.from(candidates).map(str => str.split(',').map(Number));
+    return { list, hasMoves: true };
+  }
+
+  function getBestMove(board, difficulty, personality, aiSymbol) {
+    const { list: candidates, hasMoves } = getCandidates(board);
+    if (!hasMoves) return candidates[0];
+
+    const humanSymbol = aiSymbol === 'O' ? 'X' : 'O';
+    let randChance = 0.0;
+    if (difficulty === 'novice') randChance = 0.75;
+    else if (difficulty === 'easy') randChance = 0.45;
+    else if (difficulty === 'medium') randChance = 0.20;
+    else if (difficulty === 'hard') randChance = 0.05;
+
+    if (Math.random() < randChance) return candidates[Math.floor(Math.random() * candidates.length)];
+
+    let offWeight = 1.0, defWeight = 1.0;
+    if (personality === 'aggressive') { offWeight = 1.7; defWeight = 0.6; }
+    else if (personality === 'defensive') { offWeight = 0.6; defWeight = 1.7; }
+    else if (personality === 'chaotic') {
+      offWeight = Math.random() * 1.6 + 0.4;
+      defWeight = Math.random() * 1.6 + 0.4;
+    } else {
+      offWeight = 1.0;
+      defWeight = (difficulty === 'hard' || difficulty === 'master') ? 1.2 : 0.85;
+    }
+
+    let scoredMoves = [];
+    for (let [r, c] of candidates) {
+      let offense = scorePosition(board, r, c, aiSymbol);
+      let defense = scorePosition(board, r, c, humanSymbol);
+      let total = (offense * offWeight) + (defense * defWeight);
+      scoredMoves.push({ total, move: [r, c] });
+    }
+
+    scoredMoves.sort((a, b) => b.total - a.total);
+    return scoredMoves[0].move;
+  }
+
+  // AUDIO SYNTHESIZER
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  function playSound(type) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const now = audioCtx.currentTime;
+
+    if (type === 'place') {
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain(), filter = audioCtx.createBiquadFilter();
+      osc.type = 'sine'; osc.frequency.setValueAtTime(280, now); osc.frequency.exponentialRampToValueAtTime(60, now + 0.04);
+      filter.type = 'lowpass'; filter.frequency.setValueAtTime(800, now);
+      gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      osc.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.04);
+    } else if (type === 'win') {
+      [261.63, 329.63, 392.00, 523.25].forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+        gain.gain.setValueAtTime(0.001, now + idx * 0.08);
+        gain.gain.linearRampToValueAtTime(0.15, now + idx * 0.08 + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.5);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now + idx * 0.08); osc.stop(now + idx * 0.08 + 0.5);
+      });
+    } else if (type === 'undo') {
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.type = 'sine'; osc.frequency.setValueAtTime(180, now); osc.frequency.linearRampToValueAtTime(90, now + 0.05);
+      gain.gain.setValueAtTime(0.25, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now); osc.stop(now + 0.05);
+    }
+  }
+
+  // GAME CONTROLLER
+  let mode = 'ai', humanSymbol = 'X', aiSymbol = 'O', currentTurn = 'X', gameOver = false;
+  let p1Wins = 0, p2Wins = 0;
+  let grid = Array.from({ length: GRID_HEIGHT }, () => Array(GRID_WIDTH).fill(null));
+  let cellElements = Array.from({ length: GRID_HEIGHT }, () => Array(GRID_WIDTH));
+  let moveHistory = [];
+
+  const gridElement = document.getElementById('grid');
+  const messageElement = document.getElementById('message');
+  const svgElement = document.getElementById('win-svg');
+
+  function initializeGrid() {
+    gridElement.innerHTML = ''; svgElement.innerHTML = '';
+    for (let r = 0; r < GRID_HEIGHT; r++) {
+      for (let c = 0; c < GRID_WIDTH; c++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.dataset.row = r; cell.dataset.col = c;
+        cell.addEventListener('click', handleCellClick);
+        gridElement.appendChild(cell);
+        cellElements[r][c] = cell;
+      }
+    }
+  }
+
+  function handleModeChange() {
+    mode = document.getElementById('gameMode').value;
+    const aiControls = document.querySelectorAll('.ai-only');
+    if (mode === 'pvp') {
+      aiControls.forEach(el => el.style.display = 'none');
+      document.getElementById('p1-label').textContent = 'P1 (X)';
+      document.getElementById('p2-label').textContent = 'P2 (O)';
+    } else {
+      aiControls.forEach(el => el.style.display = 'flex');
+      document.getElementById('p1-label').textContent = 'You';
+      document.getElementById('p2-label').textContent = 'AI';
+    }
+    resetGame();
+  }
+
+  function triggerAIMove() {
+    if (gameOver) return;
+    messageElement.textContent = "AI thinking...";
+    setTimeout(() => {
+      const diff = document.getElementById('difficulty').value;
+      const pers = document.getElementById('personality').value;
+      const [r, c] = getBestMove(grid, diff, pers, aiSymbol);
+      if (r !== undefined && !gameOver) {
+        makeMove(r, c, aiSymbol);
+        if (!gameOver) {
+          currentTurn = humanSymbol;
+          messageElement.textContent = `Your turn (${humanSymbol})`;
+        }
+      }
+    }, 50);
+  }
+
+  function handleCellClick(e) {
+    if (gameOver) return;
+    const r = parseInt(e.target.dataset.row), c = parseInt(e.target.dataset.col);
+    if (grid[r][c]) return;
+
+    if (mode === 'pvp') {
+      const active = currentTurn;
+      makeMove(r, c, active);
+      if (!gameOver) {
+        currentTurn = active === 'X' ? 'O' : 'X';
+        messageElement.textContent = `Turn: Player ${currentTurn === 'X' ? '1 (X)' : '2 (O)'}`;
+      }
+    } else {
+      if (currentTurn !== humanSymbol) return;
+      makeMove(r, c, humanSymbol);
+      if (!gameOver) {
+        currentTurn = aiSymbol;
+        triggerAIMove();
+      }
+    }
+  }
+
+  function makeMove(r, c, player) {
+    grid[r][c] = player;
+    moveHistory.push({ row: r, col: c, player: player });
+    const cell = cellElements[r][c];
+    cell.classList.add(player.toLowerCase());
+    cell.textContent = player;
+    playSound('place');
+
+    const winningLine = checkWin(r, c, player);
+    if (winningLine) {
+      gameOver = true;
+      playSound('win');
+      drawWinLine(winningLine, player);
+
+      if (mode === 'pvp') {
+        if (player === 'X') { p1Wins++; document.getElementById('p1-score').textContent = p1Wins; messageElement.textContent = "🎉 Player 1 Won!"; }
+        else { p2Wins++; document.getElementById('p2-score').textContent = p2Wins; messageElement.textContent = "🎉 Player 2 Won!"; }
+      } else {
+        if (player === humanSymbol) { p1Wins++; document.getElementById('p1-score').textContent = p1Wins; messageElement.textContent = "🎉 You Won!"; }
+        else { p2Wins++; document.getElementById('p2-score').textContent = p2Wins; messageElement.textContent = "💻 AI Won!"; }
+      }
+    }
+  }
+
+  function checkWin(r, c, player) {
+    for (let [dr, dc] of DIRECTIONS) {
+      let line = [{r, c}];
+      for (let i = 1; i < 5; i++) {
+        let nr = r + dr * i, nc = c + dc * i;
+        if (nr >= 0 && nr < GRID_HEIGHT && nc >= 0 && nc < GRID_WIDTH && grid[nr][nc] === player) line.push({r: nr, c: nc});
+        else break;
+      }
+      for (let i = 1; i < 5; i++) {
+        let nr = r - dr * i, nc = c - dc * i;
+        if (nr >= 0 && nr < GRID_HEIGHT && nc >= 0 && nc < GRID_WIDTH && grid[nr][nc] === player) line.unshift({r: nr, c: nc});
+        else break;
+      }
+      if (line.length >= 5) return line.slice(0, 5);
+    }
+    return null;
+  }
+
+  function drawWinLine(lineCells, player) {
+    svgElement.innerHTML = '';
+    const r1 = cellElements[lineCells[0].r][lineCells[0].c].getBoundingClientRect();
+    const r2 = cellElements[lineCells[4].r][lineCells[4].c].getBoundingClientRect();
+    const svgRect = svgElement.getBoundingClientRect();
+
+    const x1 = r1.left - svgRect.left + r1.width / 2, y1 = r1.top - svgRect.top + r1.height / 2;
+    const x2 = r2.left - svgRect.left + r2.width / 2, y2 = r2.top - svgRect.top + r2.height / 2;
+
+    const lineColor = player === 'X' ? '#0284c7' : '#ef4444';
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", x1); line.setAttribute("y1", y1); line.setAttribute("x2", x2); line.setAttribute("y2", y2);
+    line.setAttribute("stroke", lineColor); line.setAttribute("stroke-width", "7"); line.setAttribute("stroke-linecap", "round");
+    line.setAttribute("filter", "drop-shadow(0px 0px 6px " + lineColor + ")");
+
+    const length = Math.hypot(x2 - x1, y2 - y1);
+    line.style.strokeDasharray = length; line.style.strokeDashoffset = length;
+    svgElement.appendChild(line);
+
+    line.getBoundingClientRect();
+    line.style.transition = "stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1)";
+    line.style.strokeDashoffset = "0";
+  }
+
+  function undoMove() {
+    if (moveHistory.length === 0 || gameOver) return;
+    playSound('undo'); svgElement.innerHTML = '';
+
+    if (mode === 'pvp') {
+      const last = moveHistory.pop();
+      grid[last.row][last.col] = null;
+      cellElements[last.row][last.col].classList.remove(last.player.toLowerCase());
+      cellElements[last.row][last.col].textContent = '';
+      currentTurn = last.player;
+      messageElement.textContent = `Turn: Player ${currentTurn === 'X' ? '1 (X)' : '2 (O)'}`;
+    } else {
+      if (moveHistory.length > 0 && moveHistory[moveHistory.length - 1].player === aiSymbol) {
+        const last = moveHistory.pop();
+        grid[last.row][last.col] = null;
+        cellElements[last.row][last.col].classList.remove(aiSymbol.toLowerCase());
+        cellElements[last.row][last.col].textContent = '';
+      }
+      if (moveHistory.length > 0 && moveHistory[moveHistory.length - 1].player === humanSymbol) {
+        const last = moveHistory.pop();
+        grid[last.row][last.col] = null;
+        cellElements[last.row][last.col].classList.remove(humanSymbol.toLowerCase());
+        cellElements[last.row][last.col].textContent = '';
+      }
+      gameOver = false; currentTurn = humanSymbol;
+      messageElement.textContent = `Your turn (${humanSymbol})`;
+    }
+  }
+
+  function resetGame() {
+    grid = Array.from({ length: GRID_HEIGHT }, () => Array(GRID_WIDTH).fill(null));
+    moveHistory = []; gameOver = false; svgElement.innerHTML = '';
+
+    if (mode === 'pvp') {
+      currentTurn = 'X'; messageElement.textContent = "Turn: Player 1 (X)"; initializeGrid();
+    } else {
+      const firstChoice = document.getElementById('firstTurn').value;
+      if (firstChoice === 'human') {
+        humanSymbol = 'X'; aiSymbol = 'O'; currentTurn = 'X';
+        messageElement.textContent = "Your turn (X)"; initializeGrid();
+      } else {
+        humanSymbol = 'O'; aiSymbol = 'X'; currentTurn = 'X';
+        initializeGrid(); triggerAIMove();
+      }
+    }
+  }
+
+  function toggleDarkMode() { document.body.classList.toggle('dark-mode'); }
+  handleModeChange();
+</script>
+</body>
+</html>
+ 
