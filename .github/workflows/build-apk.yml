@@ -24,12 +24,21 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Prepare Web Assets
+        run: |
+          mkdir -p www
+          cp index.html www/
+
       - name: Initialize Capacitor & Setup Android
         run: |
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "Gomoku Pro" "com.gomoku.app" --web-dir .
+          npx cap init "Gomoku Pro" "com.gomoku.app" --web-dir www
           npx cap add android
+
+      - name: Set Minimum Android Version (Android 7+)
+        run: |
+          sed -i 's/minSdkVersion = .*/minSdkVersion = 24/' android/variables.gradle
           npx cap sync android
 
       - name: Build APK with Gradle
