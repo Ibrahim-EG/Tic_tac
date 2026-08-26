@@ -41,6 +41,21 @@ jobs:
           sed -i 's/minSdkVersion = .*/minSdkVersion = 24/' android/variables.gradle
           npx cap sync android
 
+      - name: Fix Kotlin Duplicate Class Conflicts
+        run: |
+          cat << 'EOF' >> android/build.gradle
+
+          allprojects {
+              configurations.all {
+                  resolutionStrategy {
+                      force "org.jetbrains.kotlin:kotlin-stdlib:1.8.22"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22"
+                      force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22"
+                  }
+              }
+          }
+          EOF
+
       - name: Build APK with Gradle
         run: |
           cd android
